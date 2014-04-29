@@ -13,6 +13,7 @@ make
 
 ### Authors
 
+Students:
 * Rafael Baumgärtner
 * Anja Jaencke
 * Christoph Keller
@@ -24,5 +25,6 @@ make
 * Harald Stepputt
 * Michael Wagner
 
+Supervisors:
 * Bernhard Haasdonk
 * Olaf Ronneberger
