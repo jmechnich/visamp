@@ -1,0 +1,186 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+#include "RecognizeButton.hh"                   \
+
+#include <iostream>
+
+
+#ifdef DEBUG_LIBIMREC
+#include <sstream>
+#include <fstream>
+#endif //DEBUG_LIBIMREC
+
+template <class ImageType>
+imrec::RecognizeButton<ImageType>::RecognizeButton(unsigned int xpos, 
+                                                   unsigned int ypos,
+                                                   unsigned int ncols,
+                                                   unsigned int nrows,
+                                                   const char* button_name)
+{ 
+
+  //set the name for the button
+  p_button_name = button_name;
+
+  image = NULL;
+  //default mask color
+  p_maskcolor.set(1,1,1);
+
+  //get position and size of subimage
+  p_nrows = nrows;
+  p_ncols = ncols;
+  p_ypos = ypos;
+  p_xpos = xpos;
+  
+  // set defaults
+  b_clicked =false;
+  i_activation_threshold = 70; 
+  i_deactivation_threshold = 40;
+  i_activated = 0;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+imrec::RecognizeButton<ImageType>::~RecognizeButton()
+{
+  delete image;
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+void imrec::RecognizeButton<ImageType>::process()
+{
+  if (image != NULL)
+  {
+
+
+#ifdef DEBUG_LIBIMREC 
+    
+    ostringstream os;
+    os << p_button_name << ".ppm";
+    ofstream capture_image(os.str().c_str());
+    image->write(capture_image);
+    capture_image.close();
+#endif //DEBUG_LIBIMREC
+    
+    pixelcount.extract(*image,p_maskcolor);
+    
+#ifdef DEBUG_LIBIMREC
+    std::cout << "PixelCount-" << p_button_name <<": " << (*pixelcount.begin()) << endl;
+#endif //DEBUG_LIBIMREC
+
+    if (b_clicked==false) //we have to check if the button is pressed
+    {
+      if (pixelcount[0]>i_activation_threshold)
+      {
+        if(i_activated>1)
+        {
+          i_activated=0;
+          b_clicked=true;
+          bpressed();
+        }
+        else 
+        {
+          i_activated++;
+        }
+      }
+      else //it's not clicked and below threshold
+      {
+        i_activated=0;
+      }
+    }
+    else  //at the moment the button has the state of being "held down"
+    {     //so we have to check when the activation ends
+      if(pixelcount[0]<i_deactivation_threshold)
+      {
+        if(i_activated>1)
+        {
+          i_activated=0;
+          b_clicked=false;
+          breleased();
+          bclicked();
+        }
+        else
+        {
+          i_activated++;
+        }
+      }
+      else //it's clicked but not below deactivation threshold
+      {
+        i_activated=0;
+      }
+    }
+  }
+}
+
+  template <class ImageType>
+  void imrec::RecognizeButton<ImageType>::setImage(ImageType* im)
+  {
+    //create subimage
+    image = new imrec::SubImage<ImageType >(im, p_ypos, p_xpos,
+                                            p_nrows, p_ncols);
+
+#ifdef DEBUG_LIBIMREC
+    cout << "New subimage for " << p_button_name << " X: " << p_xpos << " y: " << p_ypos << " Rows: " << p_nrows << " Cols: " << p_ncols << endl;
+#endif //DEBUG_LIBIMREC
+    
+  }
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+void imrec::RecognizeButton<ImageType>::setmaskcolor(typename ImageType::value_type maskcolor)
+{
+  p_maskcolor = maskcolor;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+void imrec::RecognizeButton<ImageType>::bsetActivationThreshold(unsigned int level)
+{
+  i_activation_threshold = level;
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+void imrec::RecognizeButton<ImageType>::bsetDeactivationThreshold(unsigned int level)
+{
+  i_deactivation_threshold = level;
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+void imrec::RecognizeButton<ImageType>::bclicked()
+{}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+void imrec::RecognizeButton<ImageType>::bpressed()
+{}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+void imrec::RecognizeButton<ImageType>::breleased()
+{}
+
+
+

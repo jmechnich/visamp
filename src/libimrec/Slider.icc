@@ -1,0 +1,200 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template<class ImageType>
+Slider<ImageType>::Slider(uint top, uint left, uint width, uint height)
+{
+  p_top   = top;
+  p_left  = left;
+  p_width =width;
+  p_height=height;
+  p_value = 0;
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+Slider<ImageType>::~Slider()
+{}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+ void Slider<ImageType>::setImage(ImageType* image, typename ImageType::value_type col)
+{
+  p_image    = image;
+  p_color    = col;
+  p_subimage = new imrec::SubImage<ImageType>(p_image, p_top, p_left, p_height, p_width);
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+void Slider<ImageType>::setMinVal(int minval)
+{
+ 
+ p_minval=minval;
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+  void Slider<ImageType>::setMaxVal(int maxval)
+{
+  p_maxval=maxval;
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+ void Slider<ImageType>::calibrateMin()
+{
+   cof.extract(*p_subimage,p_color);
+   p_minX= cof[0];
+   p_minY= cof[1];
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+void Slider<ImageType>::calibrateMax()
+{
+   cof.extract(*p_subimage,p_color);
+   p_maxX= cof[0];
+   p_maxY= cof[1];  
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+int Slider<ImageType>::value()
+{ 
+  float dist1=((p_currentX-p_minX)*(p_currentX-p_minX)+(p_currentY-p_minY)*(p_currentY-p_minY));
+  float dist2=((p_maxX-p_currentX)*(p_maxX-p_currentX)+(p_maxY-p_currentY)*(p_maxY-p_currentY));
+  float sdist1=sqrt(dist1);
+  float sdist2=sqrt(dist2);
+  p_value=int( (sdist1/(sdist1+sdist2))*(p_maxval-p_minval)+p_minval );
+  return p_value;
+  
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+ void Slider<ImageType>::process()
+{
+  
+   cof.extract(*p_subimage,p_color);
+
+   if (p_currentX != cof[0] || p_currentY != cof[1])
+   {
+     p_currentX  = cof[0];
+     p_currentY  = cof[1];
+     sliderMoved();
+   }
+   
+   
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+void Slider<ImageType>::sliderMoved()
+{
+
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType>
+void Slider<ImageType>::repaint(QPainter& p, ImageType& image)
+{
+// draws the background of the subimage
+  QBrush brush1(Qt::blue, Qt::Dense2Pattern);
+  p.setBrush( brush1);
+  p.drawRect( p_left, p_top, p_left + p_width, p_top + p_height);
+  
+  float dist1=((p_currentX-p_minX)*(p_currentX-p_minX)+(p_currentY-p_minY)*(p_currentY-p_minY));
+  float dist2=((p_maxX-p_currentX)*(p_maxX-p_currentX)+(p_maxY-p_currentY)*(p_maxY-p_currentY));
+  float sdist1=sqrt(dist1);
+  float sdist2=sqrt(dist2);
+  int SliderValueColor=(int)(255*sdist1/(sdist1+sdist2)) % 256;   // protection against
+                                                                 //  'out of range Bug'
+  QColor Curcol = QColor(SliderValueColor, SliderValueColor, SliderValueColor);  
+  QColor Mincol = QColor(  0,  0,  0); 
+  QColor Maxcol = QColor(255,255,255); 
+
+  QPen whitePen(Qt::white);
+  QPen blackPen(Qt::black);
+  QPen Curpen(Qt::red);
+  QPen Minpen(Qt::red,6);
+  QPen Maxpen(Qt::red,6);
+  
+  QBrush brush2(Curcol); 
+  p.setBrush( brush2 );
+  p.drawRect(int(p_currentX)+p_left, int(p_currentY)+p_top, 15,15);
+  p.setPen(Curpen);
+  std::ostringstream os;
+  os << p_value;
+  p.drawText(int(p_currentX)+p_left+17,int( p_currentY)+p_top+17,QString( os.str().c_str() ));
+  
+  QBrush brush3(Mincol); 
+  p.setBrush( brush3 );
+  p.setPen(whitePen);
+  p.drawRect(int(p_minX)+p_left,int( p_minY)+p_top,15,15);
+  p.setPen(Minpen);
+  p.drawText(int(p_minX)+p_left+17,int( p_minY)+p_top+17,QString("MIN"));
+  
+
+  QBrush brush4(Maxcol); 
+  p.setBrush( brush4 );
+  p.setPen(blackPen);
+  p.drawRect(int(p_maxX)+p_left,int(p_maxY)+p_top,15,15);
+  p.setPen(Maxpen);
+  p.drawText(int(p_maxX)+p_left+17,int(p_maxY)+p_top+17,QString("MAX"));
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

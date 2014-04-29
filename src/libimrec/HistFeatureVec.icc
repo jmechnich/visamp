@@ -1,0 +1,90 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+inline imrec::HistFeatureVec::iterator HistFeatureVec::begin()       
+{
+  return data.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::HistFeatureVec::const_iterator HistFeatureVec::begin() const
+{ 
+  return data.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::HistFeatureVec::iterator HistFeatureVec::end()         
+{ 
+  return data.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::HistFeatureVec::const_iterator HistFeatureVec::end() const
+{ 
+  return data.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::HistFeatureVec::reference HistFeatureVec::operator[]( size_t n) 
+{
+  return data[n];
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::HistFeatureVec::const_reference HistFeatureVec::operator[]( size_t n) const
+{
+  return data[n];
+}
+  
+//-----------------------------------------------------------------------
+
+inline imrec::HistFeatureVec::size_type HistFeatureVec::size() const
+{
+  return data.size();
+}
+
+//-----------------------------------------------------------------------
+
+template<class ImageType> 
+void imrec::HistFeatureVec::extract( const ImageType& img)
+{
+  fill(data.begin(), data.end(), 0);
+
+  for(typename ImageType::const_iterator it = img.begin(); 
+      it != img.end(); 
+      )
+  {
+    if (*it!=p_mask)
+        ++(zstart[it->red()/p_size][it->green()/p_size][it->blue()/p_size]);
+    ++it;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+

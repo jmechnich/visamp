@@ -1,0 +1,132 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class SubImageType>
+imrec::SubImageIterator<SubImageType>::
+SubImageIterator(SubImageType* subimage, 
+                 int row,
+                 typename SubImageType::base_iterator position)
+        :p_subimage(subimage), p_row(row), p_position(position)
+{}
+
+//-----------------------------------------------------------------------
+
+template <class SubImageType>
+imrec::SubImageIterator<SubImageType>&
+imrec::SubImageIterator<SubImageType>::
+operator++()
+{ 
+  ++p_position;
+  if (p_position==p_subimage->rowEnd(p_row))
+  {
+    ++p_row;
+    p_position=p_subimage->rowStart(p_row);
+  }
+  return *this;
+}
+
+//-----------------------------------------------------------------------
+
+template <class SubImageType>
+inline
+imrec::SubImageIterator<SubImageType>
+imrec::SubImageIterator<SubImageType>::
+operator++(int)
+{
+  imrec::SubImageIterator<SubImageType> copy=*this;
+  operator++();
+  return copy;
+}
+
+//-----------------------------------------------------------------------
+
+template <class SubImageType>
+inline
+bool 
+imrec::SubImageIterator<SubImageType>::
+operator==(const SubImageIterator<SubImageType>& iter2) const
+{
+  return (p_position==iter2.p_position);
+}
+
+//-----------------------------------------------------------------------
+
+template <class SubImageType>
+inline
+bool 
+imrec::SubImageIterator<SubImageType>::
+operator!=(const SubImageIterator<SubImageType>& iter2) const
+{
+  return !(operator==(iter2));
+}
+
+//-----------------------------------------------------------------------
+
+template <class SubImageType>
+inline
+typename SubImageType::base_iterator
+imrec::SubImageIterator<SubImageType>::
+operator->() const
+{
+  return p_position;
+}
+
+//-----------------------------------------------------------------------
+
+template <class SubImageType>
+inline
+void 
+imrec::SubImageIterator<SubImageType>::
+set(unsigned int row, 
+    typename SubImageType::base_iterator position)
+{
+  p_row=row;
+  p_position=position;
+}
+
+//-----------------------------------------------------------------------
+
+template <class SubImageType>
+inline
+void 
+imrec::SubImageIterator<SubImageType>::
+set(SubImageType* subimage, 
+    unsigned int row, 
+    typename SubImageType::base_iterator position)
+{
+  p_subimage=subimage;
+  set(row, position);
+}
+
+//-----------------------------------------------------------------------
+
+template <class SubImageType>
+typename imrec::SubImageIterator<SubImageType>::reference
+imrec::SubImageIterator<SubImageType>::operator*() const
+{
+  return *p_position;
+}
+
+
+
+
+
+
+
+
+
+
+
+

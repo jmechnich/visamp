@@ -1,0 +1,288 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template<class T>
+typename imrec::Image<T>::reference 
+imrec::Image<T>::operator()(unsigned int row, unsigned int col)
+{
+#ifdef DEBUG_LIBIMREC
+  if ((row>nrows) || (col>ncols))
+  {
+    ostringstream os;
+    os << "tried to access ("<< row << ","<< col <<")";
+    throw OutOfBoundsError();
+  }
+#endif
+  return rowStart[row][col];
+}
+
+//-----------------------------------------------------------------------
+
+template<class T>
+typename imrec::Image<T>::const_reference 
+imrec::Image<T>::operator()(unsigned int row, unsigned int col) const
+{
+#ifdef DEBUG_LIBIMREC
+  if ((row>nrows) || (col>ncols))
+  {
+    ostringstream os;
+    os << "tried to access (" << row << "," << col << ")";
+    throw OutOfBoundsError();
+  }
+#endif
+  return rowStart[row][col];
+}
+
+//-----------------------------------------------------------------------
+
+template <class T>
+inline
+unsigned int
+imrec::Image<T>::ncols() const
+{
+  return ncolumns;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T>
+unsigned int
+imrec::Image<T>::nrows() const
+{
+  return rowStart.size();
+}
+
+//-----------------------------------------------------------------------
+
+template <class T>
+unsigned int
+imrec::Image<T>::size() const
+{ 
+  return data.size(); 
+}
+
+
+//-----------------------------------------------------------------------
+
+template<class T>
+typename imrec::Image<T>::iterator
+imrec::Image<T>::begin()       
+{ 
+  return data.begin(); 
+}
+
+//-----------------------------------------------------------------------
+
+template<class T>
+typename imrec::Image<T>::const_iterator
+imrec::Image<T>::begin() const
+{ 
+  return data.begin(); 
+}
+
+//-----------------------------------------------------------------------
+
+template<class T>
+typename imrec::Image<T>::iterator
+imrec::Image<T>::end() 
+{ 
+    
+  return data.end(); 
+}
+
+//-----------------------------------------------------------------------
+
+template<class T>
+typename imrec::Image<T>::const_iterator
+imrec::Image<T>::end() const
+{ 
+   
+  return  data.end();
+}
+
+//-----------------------------------------------------------------------
+
+template<class T>
+typename imrec::Image<T>::reference 
+imrec::Image<T>::operator[](unsigned int n) 
+{
+   return data[n];
+}
+
+//-----------------------------------------------------------------------
+
+template<class T>
+typename imrec::Image<T>::const_reference
+imrec::Image<T>::operator[](unsigned int n) const
+{
+  return data[n];
+}
+  
+//-----------------------------------------------------------------------
+
+inline
+std::istream&
+eatWsAndComments( std::istream &s)
+{
+  s >> std::ws; // eat whitespaces
+  
+  while( s.peek() == '#')
+  { 
+    s.ignore( 10000, '\n');  // ignore characters until line end
+    s >> std::ws;                 // eat whitespaces
+  }
+  return s;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T>
+imrec::Image<T>::Image() : ncolumns(0)
+{}
+
+//-----------------------------------------------------------------------
+
+template <class T>
+imrec::Image<T>::~Image()
+{}
+
+//-----------------------------------------------------------------------
+
+template <class T>
+void
+imrec::Image<T>::resize( unsigned int nrows, unsigned int ncols)
+{
+  if(  ncolumns != ncols || rowStart.size() != nrows)
+  {
+    ncolumns = ncols;
+    size_type nvals = nrows * ncols;
+
+    /*---------------------------------------------------------------------
+     *  resize memory for data and row starts, if necessary
+     *---------------------------------------------------------------------*/
+    if( data.size() != nvals )    data.resize( nvals);
+    if( rowStart.size() != nrows) rowStart.resize( nrows);
+    
+    /*---------------------------------------------------------------------
+     *  update the rowStart vector
+     *---------------------------------------------------------------------*/
+    iterator it = data.begin();
+    for( size_type row = 0; row < rowStart.size(); row++)
+    {
+      rowStart[row] = it;
+      it += ncols;
+    }
+  }
+}
+
+//-----------------------------------------------------------------------
+
+template <class T>
+void
+imrec::Image<T>::read( std::istream &is)
+{
+  /*-------------------------------------------------------------------
+   *  read and check header
+   *-------------------------------------------------------------------*/
+  std::string header;
+  is >> std::setw(2+1) >> header;
+  if( !is.good() || header != "P6")
+  {
+    std::ostringstream err;
+    err << "Error while reading header: Got header `"
+        << header << "' instead of `P6'\n";
+    throw ReadError(err.str());
+  }
+  
+  /*-------------------------------------------------------------------
+   *  read width, height and maximum color-component value
+   *-------------------------------------------------------------------*/
+  unsigned int width;
+  is >> eatWsAndComments >> width;
+  if( !is.good()) throw ReadError( "error while reading image width\n");
+  
+  unsigned int height;
+  is >> eatWsAndComments >> height;
+  if( !is.good()) throw ReadError( "error while reading image height\n");
+  
+  int maxVal;
+  is >> eatWsAndComments >> maxVal;
+  if( !is.good()) throw ReadError( "error while reading maxVal\n");
+  if( maxVal > 255) throw ReadError( "only maxvals <= 255 allowed\n");
+  
+  char dummyChar;
+  is.get(dummyChar); /* dummyChar eats the single whitespace,
+                         separating maxVal from binary data */
+
+  /*-------------------------------------------------------------------
+   *  resize memory for image if size changed
+   *-------------------------------------------------------------------*/
+  resize( height, width);
+  
+
+  RgbColor<unsigned char>* helper = new RgbColor<unsigned char>[width];
+
+  iterator it = data.begin();
+
+  for (unsigned int line=0; line<height; ++line) 
+  {
+    is.read(reinterpret_cast<char*>(helper),
+            width*sizeof(RgbColor<unsigned char>));
+    if ((unsigned int)(is.gcount()) != width*sizeof(RgbColor<unsigned char>)) 
+    {
+      std::ostringstream err;
+      err << "expected " << data.size() * sizeof(RgbColor<unsigned char>) 
+          << " bytes of data, but got only " << is.gcount();
+      throw ReadError( err.str());
+    }    
+    
+    for (unsigned int x=0; x<width; ++x) {
+      convertColor (helper[x], (*it));
+      ++it;
+    }    
+  }
+
+  delete[] helper;
+  
+  is >> std::ws;  // eat trailing whitespaces, if there are any
+}
+
+//-----------------------------------------------------------------------
+
+template <class T>
+void
+imrec::Image<T>::write( std::ostream &os)
+{
+  os << "P6\n"
+     << ncols() << " " << nrows() << "\n"
+     << "255\n";
+  
+
+  RgbColor<unsigned char>* helper = new RgbColor<unsigned char>[ncols()];
+  
+  iterator it = begin(); 
+  
+  for (unsigned int line=0; line<nrows(); ++line) 
+  {
+    for (unsigned int x=0; x<ncols(); ++x) {
+      convertColor( *it, helper[x]);
+      ++it;
+    }    
+    os.write( reinterpret_cast<const char*>(helper), 
+	ncols()*sizeof(RgbColor<unsigned char>));
+  }
+  
+  delete[] helper;
+}

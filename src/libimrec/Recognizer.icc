@@ -1,0 +1,255 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class ImageType, class ClassifierType>
+imrec::Recognizer<ImageType, ClassifierType>::
+Recognizer(
+    ImageType& image,
+    unsigned int top, 
+    unsigned int left,
+    unsigned int nrows,
+    unsigned int ncols,
+    const typename ImageType::value_type mask,
+    const std::vector<imrec::Sample>::const_iterator begin,
+    const std::vector<imrec::Sample>::const_iterator end,
+    float tolerance,
+    unsigned int hold,  
+    unsigned int bins,
+    bool normalizeSample)
+        :p_subImage(&image, top, left, nrows, ncols),
+         p_top(top),
+         p_left(left),
+         p_nrows(nrows),
+         p_ncols(ncols),
+         p_mask(mask),
+         classifier(begin, end, normalizeSample),
+         p_hold(hold),
+         p_bins(bins),
+         p_index(-1),
+         hold_count(hold),
+         hist(bins, mask)
+{
+  classifier.setTolerance(tolerance);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+imrec::Recognizer<ImageType, ClassifierType>::
+Recognizer(
+    ImageType& image,
+    unsigned int top, 
+    unsigned int left,
+    unsigned int nrows,
+    unsigned int ncols,
+    const typename ImageType::value_type mask,
+    float tolerance,
+    unsigned int hold,  
+    unsigned int bins,
+    bool normalizeSample)
+        :p_subImage(&image, top, left, nrows, ncols),
+         p_top(top),
+         p_left(left),
+         p_nrows(nrows),
+         p_ncols(ncols),
+         p_mask(mask),
+         classifier(normalizeSample),
+         p_hold(hold),
+         p_bins(bins),
+         p_index(-1),
+         hold_count(hold),
+         hist(bins, mask)
+{
+  classifier.setTolerance(tolerance);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+imrec::Recognizer<ImageType, ClassifierType>::
+~Recognizer()
+{}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+void 
+imrec::Recognizer<ImageType, ClassifierType>::
+process()
+{
+  hist.extract(p_subImage);
+  
+  int id=classifier.classify(hist.begin(), hist.end());
+  
+  if (p_index==id)
+  {
+    if (hold_count==1)
+    {
+      hold_count=0;
+      recognized();
+    }
+    else if (hold_count>0)
+    {
+      --hold_count;
+    }
+  }
+  else
+  {
+    p_index=id;
+    hold_count=p_hold;
+  }
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+void 
+imrec::Recognizer<ImageType, ClassifierType>::
+learn(
+    ImageType& image,
+    int classIndex,
+    std::string name)
+{
+  //create subimage
+  imrec::SubImage<ImageType> si(
+      &image, 
+      p_top, p_left, p_nrows, p_ncols);
+
+  //create temporary image
+  imrec::Image<typename ImageType::value_type> temp;
+  //resize temporary image
+  temp.resize(si.nrows(), si.ncols());
+  //copy subimage pixels to temporary image
+  typename imrec::Image<typename ImageType::value_type>::iterator p1=temp.begin();
+  for (typename imrec::SubImage<ImageType>::const_iterator p2=si.begin();
+       p2!=si.end();
+       )
+  {
+    imrec::convertColor(*p2, *p1);
+    ++p1;
+    ++p2;
+  }
+  //add temporary image to the image library
+  p_imageLib[classIndex]=temp;
+
+  //create sample from temporary image
+  imrec::Sample s(classIndex, name);
+  hist.extract(temp);
+  s.addFeatVec(hist.begin(), hist.end());
+  //learn sample
+  classifier.learn(s);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+std::string
+imrec::Recognizer<ImageType, ClassifierType>::
+getName(int index) const
+{
+  return classifier.getName(index);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+const imrec::Image<typename ImageType::value_type>&
+imrec::Recognizer<ImageType, ClassifierType>::
+getImage(const int index)
+{
+  return p_imageLib[index];
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+void 
+imrec::Recognizer<ImageType, ClassifierType>::
+setImage(const ImageType& image)
+{
+  p_subImage.set(&image, p_top, p_left, p_nrows, p_ncols);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+void 
+imrec::Recognizer<ImageType, ClassifierType>::
+repaint(
+    QPainter& p,
+    ImageType& image) const
+{
+  p.setPen(QColor(255,255,255));
+  p.setFont(QFont("Helvetica"));
+  if (hold_count==0) //sample recognized
+  {
+    p.drawText(p_left, p_top+20, QString("Recognized: %1 (%2), d=%3")
+               .arg(QString((classifier.getName(p_index)).c_str()))
+               .arg(p_index)
+               .arg(classifier.getLastDistance()));
+  }
+  else //no sample recognized yet
+  {
+    p.drawText(p_left, p_top+20, QString("Recognizing: %1 (%2), d=%3")
+               .arg(QString((classifier.getName(p_index)).c_str()))
+               .arg(p_index)
+               .arg(classifier.getLastDistance()));
+  }
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+int
+imrec::Recognizer<ImageType, ClassifierType>::
+recognizedIndex() const
+{
+  return p_index;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+float
+imrec::Recognizer<ImageType, ClassifierType>::
+getLastDistance() const
+{
+  return classifier.getLastDistance();
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+void
+imrec::Recognizer<ImageType, ClassifierType>::
+recognized()
+{}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType, class ClassifierType>
+void
+imrec::Recognizer<ImageType, ClassifierType>::
+setTolerance(float tolerance)
+{
+  classifier.setTolerance(tolerance);
+}
+
+
+
+
+
+
+

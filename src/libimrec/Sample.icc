@@ -1,0 +1,114 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+inline
+int imrec::Sample::getlabel() const
+{
+  return p_label;
+}
+
+//-----------------------------------------------------------------------
+
+inline
+void imrec::Sample::setlabel( int label)
+{
+  p_label = label;
+}
+
+//-----------------------------------------------------------------------
+
+inline
+std::string imrec::Sample::getname() const
+{
+  return p_name;
+}
+
+//-----------------------------------------------------------------------
+
+inline
+void imrec::Sample::setname( std::string name)
+{
+  p_name = name;
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Sample::iterator Sample::begin()
+{
+  return data.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Sample::const_iterator Sample::begin() const
+{
+  return data.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Sample::iterator Sample::end()
+{
+  return data.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Sample::const_iterator Sample::end() const
+{
+  return data.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Sample::size_type Sample::size() const
+{
+  return data.size();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Sample::reference Sample::operator[]( size_type n)
+{
+  return data[n];
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Sample::const_reference Sample::operator[]( size_type n) const
+{
+  return data[n];
+}
+
+//-----------------------------------------------------------------------
+
+template< class FW_iterator>
+void imrec::Sample::addFeatVec( FW_iterator FV_begin, FW_iterator FV_end)
+{  
+  while( FV_begin != FV_end)
+  {
+    data.push_back( *FV_begin);
+    ++FV_begin;
+  }
+  p_number++;
+}
+

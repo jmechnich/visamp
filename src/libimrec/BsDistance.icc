@@ -1,0 +1,28 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class ColorType_a, class ColorType_b>
+float BsDistance::operator()(ColorType_a& pixel1,
+                             ColorType_b& pixel2)
+{
+  int red=pixel1.red()-pixel2.red();
+  int green=pixel1.green()-pixel2.green();
+  int blue=pixel1.blue()-pixel2.blue();
+  return red*red + green*green + blue*blue;
+}
+
+
+
+

@@ -1,0 +1,314 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class ImageType>
+imrec::SubImage<ImageType>::
+SubImage(ImageType* image, 
+         unsigned int top, unsigned int left, 
+         unsigned int nrows, unsigned int ncols)
+        :p_image(image), 
+    p_begin(this, 0, image->begin()), //<- wrong position! 
+    p_end(this, nrows, image->begin()), //<- wrong position!
+    p_rowStart(), p_rowEnd()
+{
+  resize(top, left, nrows, ncols);  
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+void
+imrec::SubImage<ImageType>::
+set(ImageType* image, 
+    unsigned int top, unsigned int left, 
+    unsigned int nrows, unsigned int ncols)
+{
+  p_image=image;
+  resize(top, left, nrows, ncols);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+void
+imrec::SubImage<ImageType>::
+move(int dy, int dx)
+{
+  resize(p_top+dy, p_left+dx, p_nrows, p_ncols);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+void
+imrec::SubImage<ImageType>::
+resize(unsigned int nrows, unsigned int ncols)
+{
+  resize(p_top, p_left, nrows, ncols);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+void
+imrec::SubImage<ImageType>::
+resize(unsigned int top, unsigned int left, 
+       unsigned int nrows, unsigned int ncols)
+{
+  p_top=top;
+  p_left=left;
+  p_nrows=nrows;
+  p_ncols=ncols;
+  
+  //go to first pixel of subimage 
+  base_iterator p=p_image->begin();
+  for (unsigned int i=0; i<p_image->ncols()*top+left; i++)
+  {
+    ++p;
+  }
+  p_begin.set(this, 0, p);
+  
+  //go to first pixel of first row behind subimage
+  for (unsigned int i=0; i<p_image->ncols()*nrows; i++)
+  {
+    ++p;
+  }
+  p_end.set(this, p_nrows, p);
+
+  p_rowStart.clear();
+  p_rowEnd.clear();
+  
+  //go to first pixel of subimage 
+  p=p_image->begin();
+  for (unsigned int i=0; i<p_image->ncols()*top+left; i++)
+  {
+    ++p;
+  }
+  //iterate through all rows of the subimage
+  for (unsigned int y=0; y<=p_nrows; y++)
+  {
+    //first pixel of row
+    p_rowStart.push_back(p);
+    
+    //go to end of row
+    for (unsigned int i=0; i<ncols; i++)
+    {
+      ++p;
+    }
+    p_rowEnd.push_back(p);
+    
+    //go to start of next row;
+    for (unsigned int i=0; i<p_image->ncols()-ncols; i++)
+    {
+      ++p;
+    }
+    
+  }
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+void
+imrec::SubImage<ImageType>::
+write( std::ostream &os)
+{
+  os << "P6\n"
+     << ncols() << " " << nrows() << "\n"
+     << "255\n";
+  
+
+  RgbColor<unsigned char>* helper = new RgbColor<unsigned char>[ncols()];
+  
+  iterator it = begin(); 
+  
+  for (unsigned int line=0; line<nrows(); ++line) 
+  {
+    for (unsigned int x=0; x<ncols(); ++x) {
+      convertColor( *it, helper[x]);
+      ++it;
+    }    
+    os.write( reinterpret_cast<const char*>(helper), 
+	ncols()*sizeof(RgbColor<unsigned char>));
+  }
+  
+  delete[] helper;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::const_iterator
+imrec::SubImage<ImageType>::begin() const
+{
+  return p_begin;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::iterator
+imrec::SubImage<ImageType>::begin()
+{
+  return p_begin;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::const_iterator
+imrec::SubImage<ImageType>::end() const
+{
+  return p_end;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::iterator
+imrec::SubImage<ImageType>::end()
+{
+  return p_end;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::const_reference
+imrec::SubImage<ImageType>::operator[](unsigned int position) const
+{
+  return p_image->operator()(position/p_ncols+p_top, position%p_ncols+p_left);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::reference
+imrec::SubImage<ImageType>::
+operator[](unsigned int position)
+{
+  return p_image->operator()(position/p_ncols+p_top, position%p_ncols+p_left);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::const_reference
+imrec::SubImage<ImageType>::
+operator()(unsigned int row, unsigned int col) const
+{
+  return p_image->operator()(row+p_top, col+p_left);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::reference
+imrec::SubImage<ImageType>::
+operator()(unsigned int row, unsigned int col)
+{
+  return p_image->operator()(row+p_top, col+p_left);
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+unsigned int
+imrec::SubImage<ImageType>::
+top() const
+{
+  return p_top;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+unsigned int
+imrec::SubImage<ImageType>::
+left() const
+{
+  return p_left;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+unsigned int
+imrec::SubImage<ImageType>::
+nrows() const
+{
+  return p_nrows;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+unsigned int
+imrec::SubImage<ImageType>::
+ncols() const
+{
+  return p_ncols;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+unsigned int
+imrec::SubImage<ImageType>::
+size() const
+{
+  return p_nrows*p_ncols;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::base_iterator 
+imrec::SubImage<ImageType>::rowStart(unsigned int row) const
+{
+  return p_rowStart[row];
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline
+typename imrec::SubImage<ImageType>::base_iterator 
+imrec::SubImage<ImageType>::rowEnd(unsigned int row) const
+{
+  return p_rowEnd[row];
+}
+
+
+
+
+

@@ -1,0 +1,89 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class funcDistance>
+BlueScreen<funcDistance>::BlueScreen()
+        :p_tolerance(50.0)
+{}
+
+//-----------------------------------------------------------------------
+
+template <class funcDistance>
+inline
+void BlueScreen<funcDistance>::setTolerance( float value )
+{
+  p_tolerance=value*value;
+}
+
+//-----------------------------------------------------------------------
+
+template <class funcDistance>
+template <class PixelType1, class PixelType2>
+inline
+float
+BlueScreen<funcDistance>::
+distance(PixelType1 pixel1, PixelType2 pixel2)
+{
+  return p_dist(pixel1, pixel2);
+}
+  
+//-----------------------------------------------------------------------
+
+template <class funcDistance>
+template <class SrcIterator, class DstIterator,
+          class OldBackType, class NewBackType>
+void BlueScreen<funcDistance>::
+process( SrcIterator srcBegin,
+         SrcIterator srcEnd,
+         OldBackType oldBack,
+         NewBackType newBack,
+         DstIterator dstBegin )
+{
+  for ( ; srcBegin!=srcEnd ; )
+  {
+    // If the distance between the original pixel and the background pixel
+    // is less than the tolerance, replace the original pixel with the new
+    // background pixel.
+    if (distance(*srcBegin,*oldBack)<p_tolerance)
+    {
+      convertColor(*newBack, *dstBegin);
+    }
+    // ... else take the original pixel.
+    else
+    {
+      convertColor(*srcBegin, *dstBegin);
+    }
+    ++srcBegin;
+    ++oldBack;
+    ++newBack;
+    ++dstBegin;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

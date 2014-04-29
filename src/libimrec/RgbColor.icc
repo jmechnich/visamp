@@ -1,0 +1,208 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class T>
+const RgbColor<T> RgbColor<T>::White=RgbColor<T>(255);
+
+//-----------------------------------------------------------------------
+
+template <class T>
+const RgbColor<T> RgbColor<T>::Black=RgbColor<T>(0);
+
+
+//-----------------------------------------------------------------------
+
+template <class T>
+RgbColor<T>::RgbColor () : rc(0), gc(0), bc(0) { }
+
+//-----------------------------------------------------------------------
+
+template <class T>
+RgbColor<T>::RgbColor (T red, T green, T blue)
+        : rc(red), gc(green), bc(blue) { }
+
+//-----------------------------------------------------------------------
+
+template <class T>
+RgbColor<T>::RgbColor (T gray) 
+        : rc(gray), gc(gray), bc(gray) { }
+
+
+//-----------------------------------------------------------------------
+
+template< class T>
+inline const T& convertPrintable( const T& val) { return val; }
+inline int      convertPrintable( char val)     { return val; }
+inline int      convertPrintable( uchar val)    { return val; }
+  
+//-----------------------------------------------------------------------
+
+template <class T>
+std::ostream& operator << (std::ostream& os, const RgbColor<T>& c)
+{
+  os << '(' 
+     << convertPrintable(c.red()) << ", " 
+     << convertPrintable(c.green()) << ", " 
+     << convertPrintable(c.blue()) << ')';
+  return os;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+T RgbColor<T>::red () const
+{ 
+  return rc;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+T RgbColor<T>::green () const
+{ 
+  return gc;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+T RgbColor<T>::blue () const
+{ 
+  return bc;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+void RgbColor<T>::set (T red, T green, T blue) 
+{
+  rc = red; gc = green; bc = blue;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T>& RgbColor<T>::operator += (const RgbColor<T>& c) 
+{
+  rc += c.rc;
+  gc += c.gc;
+  bc += c.bc;
+  return *this;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T>& RgbColor<T>::operator += (T gray) 
+{
+  rc += gray;
+  gc += gray;
+  bc += gray;
+  return *this;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T>& RgbColor<T>::operator -= (const RgbColor<T>& c) 
+{
+  rc -= c.rc;
+  gc -= c.gc;
+  bc -= c.bc;
+  return *this;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T>& RgbColor<T>::operator -= (T gray) 
+{
+  rc -= gray;
+  gc -= gray;
+  bc -= gray;
+  return *this;
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T>& RgbColor<T>::operator *= (float factor) 
+{
+  rc = (T) (factor*rc);
+  gc = (T) (factor*gc);
+  bc = (T) (factor*bc);
+  return *this;
+}
+ 
+//-----------------------------------------------------------------------
+
+template <class T> inline
+bool RgbColor<T>::operator == (const RgbColor<T>& c) const
+{
+  return ((rc == c.rc) && (gc == c.gc) && (bc == c.bc));
+}
+ 
+//-----------------------------------------------------------------------
+
+template <class T> inline
+bool RgbColor<T>::operator != (const RgbColor<T>& c) const
+{
+  return ((rc != c.rc) || (gc != c.gc) || (bc != c.bc));
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T> operator ! (const RgbColor<T>& c)
+{
+  RgbColor<T> result = RgbColor<T>::White;
+  return (result -= c);
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T> operator + (const RgbColor<T>& c1, const RgbColor<T>& c2)
+{
+  RgbColor<T> result = c1;
+  return (result += c2);
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T> operator - (const RgbColor<T>& c1, const RgbColor<T>& c2)
+{
+  RgbColor<T> result = c1;
+  return (result -= c2);
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T> operator * (const RgbColor<T>& c1, float factor)
+{
+  RgbColor<T> result = c1;
+  return (result *= factor);
+}
+
+//-----------------------------------------------------------------------
+
+template <class T> inline
+RgbColor<T> operator * (float factor, const RgbColor<T>& c1)
+{
+  RgbColor<T> result = c1;
+  return (result *= factor);
+}

@@ -1,0 +1,170 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template<class Cont, class Iter>
+inline void CheckedIter<Cont,Iter>::valid(Iter p)
+{ 
+  if (c->end() == p) return;
+  for(Iter pp = c->begin(); pp!=c->end(); ++pp) 
+      if (pp == p) return;
+  throw out_of_bounds();
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline  bool operator==(const CheckedIter<Cont, Iter>& i, const CheckedIter<Cont, Iter>& j)
+{ 
+  return i.c==j.c && i.akt==j.akt;
+} 
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline bool operator!=(const CheckedIter<Cont, Iter>& i, const CheckedIter<Cont, Iter>& j)
+{
+  return i.c!=j.c || i.akt!=j.akt;
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline CheckedIter<Cont, Iter>::CheckedIter(Cont& x, Iter p) : akt(p), c(&x)
+{
+  valid(p);
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>::reference
+CheckedIter<Cont, Iter>:: operator*()
+{
+  if (akt==c->end()) throw out_of_bounds();
+  return *akt;
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>::pointer
+CheckedIter<Cont, Iter>::operator->()
+{
+  return &*akt;
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>::CheckedIter  
+CheckedIter<Cont, Iter>::operator+(int d)
+{
+  if (c->end()-akt<=d) throw out_of_bounds();
+  return CheckedIter(*c,akt+d);
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>:: CheckedIter  
+CheckedIter<Cont, Iter>::operator-(int d)
+{
+  if (akt-c->begin()<=d) throw out_of_bounds();
+  return CheckedIter(*c,akt-d);
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>::reference
+CheckedIter<Cont, Iter>::operator[] (int d)
+{
+  if (c->end()-akt<=d) throw out_of_bounds();
+  return c[d];
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>::CheckedIter& 
+CheckedIter<Cont, Iter>::operator++()
+{
+  if (akt== c->end()) throw out_of_bounds();
+  ++akt;
+  return *this;
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>::CheckedIter
+CheckedIter<Cont, Iter>::operator++(int)
+{
+  CheckedIter tmp = *this;
+  ++*this;
+  return tmp;
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>::CheckedIter&
+CheckedIter<Cont, Iter>::operator--()
+{
+  if (akt == c->begin()) throw out_of_bounds();
+  --akt;
+  return *this;
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>::CheckedIter
+CheckedIter<Cont, Iter>::operator--(int)
+{
+  CheckedIter tmp = *this;
+  --*this;
+  return tmp;
+}
+
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline
+typename CheckedIter<Cont, Iter>::difference_type
+CheckedIter<Cont, Iter>::index()
+{
+  return akt-c.begin();
+}
+
+//-----------------------------------------------------------------------
+
+template<class Cont, class Iter>
+inline Iter
+CheckedIter<Cont, Iter>::unchecked()
+{
+  return akt;
+}
+

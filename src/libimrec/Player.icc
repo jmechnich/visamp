@@ -1,0 +1,100 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+inline
+void imrec::Player::addFile( QString filename)
+{
+    readFile( filename, true);
+}
+
+//-----------------------------------------------------------------------
+
+inline
+unsigned int imrec::Player::getVolume()
+{
+    return p_volume;
+}
+
+//-----------------------------------------------------------------------
+
+inline
+QString imrec::Player::getTitle()
+{
+    return p_playlist[p_current];
+}
+
+//-----------------------------------------------------------------------
+
+inline
+unsigned int imrec::Player::getCurrent()
+{
+    return p_current;
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Player::iterator Player::begin()
+{
+    return p_playlist.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Player::const_iterator Player::begin() const
+{
+    return p_playlist.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Player::iterator Player::end()
+{
+    return p_playlist.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Player::const_iterator Player::end() const
+{
+    return p_playlist.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Player::size_type Player::size() const
+{
+    return p_playlist.size();
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Player::reference Player::operator[]( size_type n)
+{
+    return p_playlist[n];
+}
+
+//-----------------------------------------------------------------------
+
+inline
+imrec::Player::const_reference Player::operator[]( size_type n) const
+{
+    return p_playlist[n];
+}

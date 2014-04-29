@@ -1,0 +1,96 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template<class ImageType>
+void PixelCountFeatureVec::extract(const ImageType& image,
+                                   const typename ImageType::value_type color = typename ImageType::value_type(1,1,1))
+{
+  float pixel_not_match = 0;
+  pcfvector.clear(); //clear the vector (we are using pushback)
+  
+  for (typename ImageType::const_iterator iter = image.begin();
+       iter != image.end(); iter++)
+  {
+    if( color != (*iter))
+    {
+      pixel_not_match++;
+    }
+  }
+  pcfvector.push_back(pixel_not_match);
+}
+  
+//-----------------------------------------------------------------------
+
+inline imrec::PixelCountFeatureVec::iterator 
+PixelCountFeatureVec::begin()
+{
+  return pcfvector.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::PixelCountFeatureVec::const_iterator
+PixelCountFeatureVec::begin() const
+{
+  return pcfvector.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::PixelCountFeatureVec::iterator 
+PixelCountFeatureVec::end()
+{
+  return pcfvector.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::PixelCountFeatureVec::const_iterator
+PixelCountFeatureVec::end() const
+{
+  return pcfvector.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::PixelCountFeatureVec::reference 
+PixelCountFeatureVec::operator[]( size_type n)
+{  return pcfvector[n];
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::PixelCountFeatureVec::const_reference 
+PixelCountFeatureVec::operator[](size_type n) const
+{
+  return pcfvector[n];
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::PixelCountFeatureVec::size_type 
+PixelCountFeatureVec::size() const
+{
+  return pcfvector.size();
+}
+
+
+
+
+
+
+
+
+

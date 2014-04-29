@@ -1,0 +1,71 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class ColorType>
+imrec::ConstantColor<ColorType>::
+ConstantColor(ColorType color)
+        :p_color(color)
+{}    
+
+//-----------------------------------------------------------------------
+
+template <class ColorType>
+inline
+imrec::ConstantColor<ColorType>&
+imrec::ConstantColor<ColorType>::
+operator++()
+{
+  return *this;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ColorType>
+inline
+imrec::ConstantColor<ColorType>&
+imrec::ConstantColor<ColorType>::
+operator++(int)
+{
+  return *this;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ColorType>
+inline
+ColorType&
+imrec::ConstantColor<ColorType>::
+operator*()
+{
+  return p_color;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ColorType>
+inline
+const ColorType&
+imrec::ConstantColor<ColorType>::
+operator*() const
+{
+  return p_color;
+}
+
+
+
+
+
+
+

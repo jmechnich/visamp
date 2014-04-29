@@ -1,0 +1,123 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+
+template <class ImageType>
+void CenterOfGravityFeatureVec::extract( const ImageType& image
+                                         ,const typename ImageType::value_type color = typename ImageType::value_type(1,1,1) )
+{
+  int x = 0;
+  int y = 0;
+  int ncols  = image.ncols();
+  float xval = 0;
+  float yval = 0;
+  float sumadd = 0;
+  cogvector.clear(); // empty the vector (we are using pushback)
+  
+  for (typename ImageType::const_iterator i=image.begin(); i!=image.end();i++)
+  {
+    if (*i != color) // pixel is different from color
+    {
+      while(x >= ncols) //adjust now x and y
+      {
+        x -= ncols;
+        y++;
+      }
+      xval += x;
+      yval += y;
+      sumadd++;
+    }
+    x++;
+  }
+  
+  if( sumadd == 0)
+  {
+    cogvector.push_back(0);
+    cogvector.push_back(0);
+  }
+  else
+  {
+    cogvector.push_back(xval /= sumadd);
+    cogvector.push_back(yval /= sumadd);
+  }
+}
+
+
+
+//-----------------------------------------------------------------------
+
+inline imrec::CenterOfGravityFeatureVec::iterator 
+CenterOfGravityFeatureVec::begin()
+{
+  return cogvector.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::CenterOfGravityFeatureVec::const_iterator
+CenterOfGravityFeatureVec::begin() const
+{
+  return cogvector.begin();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::CenterOfGravityFeatureVec::iterator 
+CenterOfGravityFeatureVec::end()
+{
+  return cogvector.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::CenterOfGravityFeatureVec::const_iterator
+CenterOfGravityFeatureVec::end() const
+{
+  return cogvector.end();
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::CenterOfGravityFeatureVec::reference 
+CenterOfGravityFeatureVec::operator[]( size_type n)
+{
+  return cogvector[n];
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::CenterOfGravityFeatureVec::const_reference 
+CenterOfGravityFeatureVec::operator[](size_type n) const
+{
+  return cogvector[n];
+}
+
+//-----------------------------------------------------------------------
+
+inline imrec::CenterOfGravityFeatureVec::size_type 
+CenterOfGravityFeatureVec::size() const
+{
+  return cogvector.size();
+}
+
+
+
+
+
+
+
+
+
+

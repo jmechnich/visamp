@@ -1,0 +1,148 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class ImageType>
+inline
+imrec::PeripheryFeatureVec<ImageType>::PeripheryFeatureVec()
+{
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline void
+imrec::PeripheryFeatureVec<ImageType>::setTolerance(unsigned int tol)
+{
+  tolerance=tol;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline int 
+imrec::PeripheryFeatureVec<ImageType>::extract(const ImageType* image, typename ImageType::value_type color)
+{
+  BackgroundColor=color;
+  int count = 0;    // holds the amount of peripheral pixels of the object
+  uint ncols = image->ncols();
+  uint nrows = image->nrows();
+  
+  int neighbourhood[] = { -1,-1, 0,-1, 1,-1, 1,0, 1,1, 0,1, -1,1, -1,0  };
+  int index           = -1;
+  
+  int neighbours      = 0; // holds the amount of 
+                          //  neighbours that belongs to the current pixel  
+
+  for (uint rows=2; rows <= nrows-2; rows++)
+  {
+    for (uint cols=2; cols <= ncols-2; cols++)
+    {            
+      if ( (*image)(rows, cols) != BackgroundColor )
+      {
+        index      = -1;
+        neighbours = 0;
+        for (int check=1; check <= 8; check++)
+        {   
+          if ((*image)(rows+neighbourhood[++index], cols+neighbourhood[++index]) != BackgroundColor)
+          {
+            neighbours++;
+          }
+        }
+        if (neighbours <= tolerance)
+        {
+          count++;
+        }       
+      }
+    }
+  }
+  peripheralPixels=count;
+  return count;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline int*
+PeripheryFeatureVec<ImageType>::begin()
+{
+  return *peripheralPixels;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline const int*
+PeripheryFeatureVec<ImageType>::begin() const
+{
+  return &peripheralPixels;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline int*
+PeripheryFeatureVec<ImageType>::end()
+{
+  return (&peripheralPixels)+1;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline const int* 
+PeripheryFeatureVec<ImageType>::end() const
+{
+  return (&peripheralPixels)+1;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline int&
+PeripheryFeatureVec<ImageType>::operator[](uint n)
+{
+  return &peripheralPixels;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline int&
+PeripheryFeatureVec<ImageType>::operator[](uint n) const
+{
+  return &peripheralPixels;
+}
+
+//-----------------------------------------------------------------------
+
+template <class ImageType>
+inline uint
+PeripheryFeatureVec<ImageType>::size() const
+{
+  return 1;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

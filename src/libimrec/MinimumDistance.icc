@@ -1,0 +1,142 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class SampleType>
+imrec::MinimumDistance<SampleType>::
+MinimumDistance(
+    bool normalizeSamples)
+        :imrec::NearestNeighbour<SampleType>(normalizeSamples)
+{}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+imrec::MinimumDistance<SampleType>::MinimumDistance(
+    const typename std::vector<SampleType>::const_iterator begin,
+    const typename std::vector<SampleType>::const_iterator end,
+    bool normalizeSamples)
+        :imrec::NearestNeighbour<SampleType>(begin, end, normalizeSamples)
+{
+  std::vector<SampleType> tempLib;
+ 
+  //create temp lib
+  for (typename std::vector<SampleType>::const_iterator p=this->p_sampleLib.begin();
+       p!=this->p_sampleLib.end();
+       )
+  {
+    //increase counter of current sample id/index
+    int c=++p_count[p->getlabel()];
+    if (c==1) //that's the first sample with that id/index
+    {
+      //put sample in sample library
+      tempLib.push_back(*p);
+      //set position 
+      p_position[p->getlabel()]=tempLib.size()-1;
+    }
+    else //there are already sample of that id/index in the library
+    {
+      //get current mean sample from the library
+      SampleType& prev=tempLib[p_position[p->getlabel()]];
+      
+      //add sample to previous mean sample
+      typename SampleType::const_iterator p2=p->begin();     
+      for (typename SampleType::iterator p1=prev.begin();
+           p1!=prev.end();
+           )
+      {
+        *p1=float(*p1)+float(*p2);
+        ++p1;
+        ++p2;
+      }  
+    }
+    ++p;    
+  }
+  
+  //multiply all samples with 1/count
+  for (typename std::vector<SampleType>::iterator libit=tempLib.begin();
+       libit!=tempLib.end();
+       )
+  {
+    float factor=1./float(p_count[libit->getlabel()]);
+    for (typename SampleType::iterator p= libit->begin();
+         p!=libit->end();
+         )
+    {
+      *p=float(*p)*factor;
+      ++p;
+    }
+    ++libit;
+  } 
+ 
+  //copy templib -> sampleLib
+  this->p_sampleLib.clear();
+  this->p_sampleLib=tempLib;
+}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+inline 
+void
+imrec::MinimumDistance<SampleType>::
+learn(SampleType sample)
+{
+  //check if there are samples in the library already
+  if (this->p_sampleLib.size()==0)
+  {
+    //set library sample size
+    this->p_size=sample.size();
+  }
+  else  //there are samples in the library
+  {
+    //check size of new sample
+    if (this->p_size!=sample.size()) throw SizeError(
+        "Trying to leran Sample of invalid size");
+  }
+  
+  //normalize sample
+  if (this->p_normalize) this->normalize(sample.begin(), sample.end());
+
+  //add it to the library
+  int c=++p_count[sample.getlabel()];
+  
+  if (c==1) //that's the first sample with that id/index
+  {
+    //put sample in sample library
+    this->p_sampleLib.push_back(sample);
+    //set position 
+    p_position[sample.getlabel()]=this->p_sampleLib.size()-1;
+  }
+  else //there are already sample of that id/index in the library
+  {
+    //get current mean sample from the library
+    SampleType& prev=this->p_sampleLib[p_position[sample.getlabel()]];
+    
+    //add sample to previous mean sample
+    float count=float(p_count[sample.getlabel()]);
+    float factor=1.0/(count);
+    count-=1.0;
+
+    typename SampleType::const_iterator p2=sample.begin();     
+    for (typename SampleType::iterator p1=prev.begin();
+         p1!=prev.end();
+         )
+    {
+      *p1=((float(*p1)*count)+float(*p2))*factor;
+      ++p1;
+      ++p2;
+    }  
+  } 
+}

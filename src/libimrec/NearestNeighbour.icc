@@ -1,0 +1,294 @@
+// This file is part of VisAmp.
+//
+// VisAmp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// VisAmp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with VisAmp.  If not, see <http://www.gnu.org/licenses/>.
+
+template <class SampleType>
+imrec::NearestNeighbour<SampleType>::
+NearestNeighbour(
+    bool normalizeSamples)
+        :p_minDist(-1.), 
+         p_tolerance(0.5), 
+         p_size(0),
+         p_normalize(normalizeSamples)
+{}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+imrec::NearestNeighbour<SampleType>::
+NearestNeighbour(
+    const typename std::vector<SampleType>::const_iterator begin,
+    const typename std::vector<SampleType>::const_iterator end,
+    bool normalizeSamples)
+        :p_sampleLib(begin, end), 
+         p_minDist(-1.), 
+         p_tolerance(0.5), 
+         p_size(0),
+         p_normalize(normalizeSamples)
+{
+  //set p_size=size of first sample
+  if (begin!=end)
+  {
+    p_size=begin->size();
+  }
+  
+  //check if all the other samples have the same size
+  for (typename std::vector<SampleType>::const_iterator p=begin;
+       p!=end;
+       )
+  {
+    if (p->size()!=p_size) throw SizeError(
+        "Not all samples in the sample library have the same size.");
+    ++p;
+  }
+  
+  //normalize samples
+  if (p_normalize) normalize();
+}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+inline
+int
+imrec::NearestNeighbour<SampleType>::
+classify(const SampleType& sample)
+{
+  return classify(sample.begin(), sample.end());
+}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+template <class IteratorType>
+int 
+imrec::NearestNeighbour<SampleType>::
+classify(
+    const IteratorType begin,
+    const IteratorType end)
+{
+  //check if there are samples in the library
+  if (p_sampleLib.size()==0)
+  {
+    return -1;
+  }
+  
+  //check if the vector has a valid size
+  if ((unsigned int)(end-begin)!=p_size) throw SizeError(
+      "The vector does not have a valid size.");
+  
+  //copy vector in temp vector
+  std::vector<float> temp(p_size);
+  std::vector<float>::iterator tempit=temp.begin();
+  for (IteratorType p=begin;
+       p!=end;
+       )
+  {
+    *tempit=float(*p);
+    ++p;
+    ++tempit;
+  }
+  
+  //normalize temp vector
+  if (p_normalize) normalize(temp.begin(),temp.end());
+  
+  //find sample with minimum distance
+  int minLabel=-1;
+  float minDist=-1.;
+  for (typename std::vector<SampleType>::const_iterator p=p_sampleLib.begin();
+       p!=p_sampleLib.end();
+       )
+  {
+    float dist=euklidianDistance(temp.begin(), temp.end(), p->begin());
+    if ((minLabel==-1) || (dist<minDist))
+    {
+      minLabel=p->getlabel();
+      minDist=dist;
+    }
+    ++p;
+  }
+  p_minDist=minDist;
+  
+  //check if the minimum distance>tolerance
+  if (minDist>p_tolerance)
+  {
+    return -1;
+  }
+  else
+  {
+    return minLabel;
+  }
+}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+inline 
+void
+imrec::NearestNeighbour<SampleType>::
+learn(SampleType sample)
+{
+  //check if there are samples in the library already
+  if (p_sampleLib.size()==0)
+  {
+    //set library sample size
+    p_size=sample.size();
+  }
+  else  //there are samples in the library
+  {
+    //check size of new sample
+    if (p_size!=sample.size()) throw SizeError(
+        "Trying to leran Sample of invalid size");
+  }
+  
+  //normalize sample
+  if (p_normalize) normalize(sample.begin(), sample.end());
+  //add it to the library
+  p_sampleLib.push_back(sample);
+}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+inline 
+std::string
+imrec::NearestNeighbour<SampleType>::
+getName(int index) const
+{
+  std::string s="unknown";
+  for (typename std::vector<SampleType>::const_iterator p=p_sampleLib.begin();
+       p!=p_sampleLib.end();
+       )
+  {
+    if (index==p->getlabel()) s=p->getname();
+    ++p;
+  }
+  return s;
+}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+inline 
+float
+imrec::NearestNeighbour<SampleType>::
+getLastDistance() const
+{
+  return p_minDist;
+}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+inline 
+void 
+imrec::NearestNeighbour<SampleType>::
+setTolerance(const float value)
+{
+  p_tolerance=value;
+}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+float 
+imrec::NearestNeighbour<SampleType>::
+euklidianDistance(
+    const std::vector<float>::const_iterator begin1, 
+    const std::vector<float>::const_iterator end1,
+    const typename SampleType::const_iterator begin2) const
+{
+  float sum=0.;
+  float tmp;
+  
+  typename SampleType::const_iterator p2=begin2;
+  for (std::vector<float>::const_iterator p1=begin1;
+       p1!=end1;
+       )
+  {
+    tmp=*p1-float(*p2);            
+    sum+=tmp*tmp;
+    ++p1;
+    ++p2;
+  }
+  return sqrt(sum);
+}
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+void 
+imrec::NearestNeighbour<SampleType>::
+normalize()
+{
+  for (typename std::vector<SampleType>::iterator libiter=p_sampleLib.begin();
+        libiter!=p_sampleLib.end();
+        )
+  {
+    normalize(libiter->begin(),libiter->end());
+    ++libiter;
+  } 
+}        
+
+//-----------------------------------------------------------------------
+
+template <class SampleType>
+void 
+imrec::NearestNeighbour<SampleType>::
+normalize(
+    typename SampleType::iterator begin,
+    typename SampleType::iterator end)
+{
+  //make sure that the vector is not empty
+  if (begin!=end)
+  {
+    //find min/max values
+    float min=*begin;
+    float max=min;
+    for (typename SampleType::iterator p=begin; p!=end; )
+    {
+      if (*p >max)
+      {
+        max = *p;
+      }
+      else if (*p <min)
+      {
+        min = *p;
+      }
+      ++p;      
+    }
+    
+   
+    float offset=-min;
+    float factor=0.;
+    //catch division by zero
+    if (max!=min)
+    {
+      factor=1./(max-min);
+    }
+    //stretch all values -> [0..1]
+    for (typename SampleType::iterator p=begin ; p!=end;)
+    {
+      *p = (*p + offset)* factor;
+      ++p;
+    }
+  }
+}
+
+
+
+
+
+
+
