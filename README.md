@@ -13,16 +13,16 @@ make
 
 ### Authors
 
-Rafael Baumgärtner
-Anja Jaencke
-Christoph Keller
-Wladimir Kupriyenko
-Jörg Mechnich
-Björn Penning
-Florian Pigorsch
-Martin Schlesinger
-Harald Stepputt
-Michael Wagner
+* Rafael Baumgärtner
+* Anja Jaencke
+* Christoph Keller
+* Wladimir Kupriyenko
+* Jörg Mechnich
+* Björn Penning
+* Florian Pigorsch
+* Martin Schlesinger
+* Harald Stepputt
+* Michael Wagner
 
-Bernhard Haasdonk
-Olaf Ronneberger
+* Bernhard Haasdonk
+* Olaf Ronneberger
