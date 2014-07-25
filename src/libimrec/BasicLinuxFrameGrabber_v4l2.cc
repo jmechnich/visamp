@@ -44,6 +44,9 @@ imrec::BasicLinuxFrameGrabber::BasicLinuxFrameGrabber(const char device[])
         , p_pixformat( V4L2_PIX_FMT_BGR24), p_ncols( 0), p_nrows( 0), p_fps( 30)
         , p_buffers( 0), p_nBuffers( 2)
 {
+  p_ncols = 320;
+  p_nrows = 240;
+  
   clearPBuf();
   deviceOpen(device);
   deviceInfo();
@@ -53,8 +56,6 @@ imrec::BasicLinuxFrameGrabber::BasicLinuxFrameGrabber(const char device[])
   enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   if (-1 == xioctl(dev, VIDIOC_STREAMON, &type))
       errno_exit("VIDIOC_STREAMON");
-
-  startCapture();
 }
 
 /*=========================================================================
@@ -118,15 +119,15 @@ void imrec::BasicLinuxFrameGrabber::printPBuf()
 {
   std::cerr << "buffer info:" << std::endl
             << "------------" << std::endl
-            << "index:     " << std::dec << p_buf.index << std::endl
-            << "type:      " << std::dec << p_buf.type << std::endl
-            << "bytesused: " << std::dec << p_buf.bytesused << std::endl
-            << "flags:     " << std::hex << p_buf.flags << std::endl
-            << "timestamp: " << std::dec << p_buf.timestamp.tv_sec << "."
-            << std::dec << p_buf.timestamp.tv_usec << std::endl
-            << "sequence:  " << std::dec << p_buf.sequence << std::endl
-            << "offset:    " << std::hex << p_buf.m.offset << std::endl
-            << "length:    " << std::dec << p_buf.length << std::endl
+            << "index:     " << p_buf.index << std::endl
+            << "type:      " << p_buf.type << std::endl
+            << "bytesused: " << p_buf.bytesused << std::endl
+            << "flags:     " << std::hex << p_buf.flags << std::dec << std::endl
+            << "timestamp: " << p_buf.timestamp.tv_sec << "."
+            << p_buf.timestamp.tv_usec << std::endl
+            << "sequence:  " << p_buf.sequence << std::endl
+            << "offset:    " << std::hex << p_buf.m.offset << std::dec << std::endl
+            << "length:    " << p_buf.length << std::endl
             << std::endl;
 }
 
@@ -153,7 +154,7 @@ void imrec::BasicLinuxFrameGrabber::deviceInfo()
   std::cerr << "bus:     " << vid_caps.bus_info << std::endl;
   std::cerr << "version: " << ((vid_caps.version>>16)&&0xff) << "."
             << ((vid_caps.version>>24)&&0xff) << std::endl;
-  std::cerr << "caps:    " << std::hex << vid_caps.capabilities << std::endl << std::endl;
+  std::cerr << "caps:    " << std::hex << vid_caps.capabilities << std::dec << std::endl << std::endl;
   
   //check if device supports capturing
   if ((vid_caps.capabilities & V4L2_CAP_VIDEO_CAPTURE)==0)
@@ -168,13 +169,13 @@ void imrec::BasicLinuxFrameGrabber::deviceInfo()
     exit(1);
   }
   
+  
   /*-----------------------------------------------------------------------
    *  Query cropping capabilities
    *-----------------------------------------------------------------------*/
   struct v4l2_cropcap cropcap = {0};
-  
   cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  if( 0 == ioctl( dev, VIDIOC_CROPCAP, &cropcap))
+  if( 0 == xioctl( dev, VIDIOC_CROPCAP, &cropcap))
   {
     std::cerr << "cropping:" << std::endl;
     std::cerr << "-------------------" << std::endl;
@@ -187,8 +188,8 @@ void imrec::BasicLinuxFrameGrabber::deviceInfo()
     fprintf( stderr, "Pixel aspect: %d/%d\n\n",
             cropcap.pixelaspect.numerator,
             cropcap.pixelaspect.denominator);
+
     struct v4l2_crop crop={0};
-    
     crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     crop.c = cropcap.defrect; /* reset to default */
     
@@ -238,8 +239,13 @@ void imrec::BasicLinuxFrameGrabber::deviceInfo()
       t = ' ';
       if( frmsize.type == V4L2_FRMSIZE_TYPE_DISCRETE)
       {
-        if( p_ncols == 0) p_ncols = frmsize.discrete.width;
-        if( p_nrows == 0) p_nrows = frmsize.discrete.height;
+        // if( p_ncols < frmsize.discrete.width || 
+        //     p_nrows < frmsize.discrete.height)
+        if( p_ncols == 0)
+        {
+          p_ncols = frmsize.discrete.width;
+          p_nrows = frmsize.discrete.height;
+        }
         
         t = 'D';
         fprintf( stderr," %c%dx%d", t,
@@ -248,9 +254,6 @@ void imrec::BasicLinuxFrameGrabber::deviceInfo()
       }
       else if( frmsize.type == V4L2_FRMSIZE_TYPE_STEPWISE)
       {
-        if( p_ncols == 0) p_ncols = frmsize.stepwise.max_width;
-        if( p_nrows == 0) p_nrows = frmsize.stepwise.max_height;
-
         t = 'S';
         fprintf( stderr," %c%dx%d", t,
                frmsize.stepwise.max_width,
@@ -282,7 +285,7 @@ void imrec::BasicLinuxFrameGrabber::deviceInfo()
     {
       if (queryctrl.flags & V4L2_CTRL_FLAG_DISABLED) continue;
       control.id = queryctrl.id;
-      if( -1 == ioctl (dev, VIDIOC_G_CTRL, &control))
+      if( -1 == xioctl (dev, VIDIOC_G_CTRL, &control))
       {
         perror ("VIDIOC_G_CTRL");
         exit (EXIT_FAILURE);
@@ -292,7 +295,7 @@ void imrec::BasicLinuxFrameGrabber::deviceInfo()
             queryctrl.flags & V4L2_CTRL_FLAG_INACTIVE) )
       {
         control.value = queryctrl.default_value;
-        if( -1 == ioctl (dev, VIDIOC_S_CTRL, &control))
+        if( -1 == xioctl (dev, VIDIOC_S_CTRL, &control))
         {
           errno_exit( "VIDIOC_S_CTRL");
           perror ("VIDIOC_S_CTRL");
@@ -327,6 +330,7 @@ void imrec::BasicLinuxFrameGrabber::deviceInfo()
       exit (EXIT_FAILURE);
     }
   }
+  std::cerr << std::endl;
 }
 
 /*=========================================================================
@@ -336,8 +340,12 @@ void imrec::BasicLinuxFrameGrabber::deviceInfo()
 void imrec::BasicLinuxFrameGrabber::deviceInit()
 {
   struct v4l2_format fmt={0};
-  // v4l2_format
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  if (-1 == xioctl(dev, VIDIOC_G_FMT, &fmt))
+  {
+    std::cerr << "VIDIOC_G_FMT failed" << std::endl;
+    std::exit(1);
+  }
   fmt.fmt.pix.width  = p_ncols;
   fmt.fmt.pix.height = p_nrows;
   fmt.fmt.pix.field  = V4L2_FIELD_INTERLACED;
@@ -349,23 +357,83 @@ void imrec::BasicLinuxFrameGrabber::deviceInit()
     std::exit(1);
   }
   
-  /* Note VIDIOC_S_FMT may change width and height. */
-  if( p_ncols != fmt.fmt.pix.width)
+  std::cerr << "image format:\n" 
+            << "-------------\n"
+            << "width:        " << fmt.fmt.pix.width << std::endl
+            << "height:       " << fmt.fmt.pix.height << std::endl
+            << "pixelformat:  " << std::hex << "0x" << fmt.fmt.pix.pixelformat
+            << std::dec << std::endl
+            << "field:        " << std::hex << "0x" << fmt.fmt.pix.field << std::dec << std::endl
+            << "bytesperline: " << fmt.fmt.pix.bytesperline << std::endl
+            << "sizeimage:    " << fmt.fmt.pix.sizeimage << std::endl
+            << "colorspace:   " << std::hex << "0x" << fmt.fmt.pix.colorspace << std::dec << std::endl
+            << std::endl;
+  
+  v4l2_frmivalenum frmival = {0};
+  frmival.index        = 0;
+  frmival.pixel_format = fmt.fmt.pix.pixelformat;
+  frmival.width        = fmt.fmt.pix.width;
+  frmival.height       = fmt.fmt.pix.height;
+  if( 0 == xioctl(dev, VIDIOC_ENUM_FRAMEINTERVALS, &frmival))
   {
-    p_ncols= fmt.fmt.pix.width;
-    std::cerr << "Image width set to " << p_ncols << " by device." << std::endl;
+    std::cerr << "frame interval:\n"
+              <<"----------------\n";
+    if( frmival.type == V4L2_FRMIVAL_TYPE_DISCRETE)
+    {
+      std::cerr << "type: " << frmival.type << " (discrete)" << std::endl;
+      while( true)
+      {
+        frmival.index+=1;
+        if( -1 == xioctl(dev, VIDIOC_ENUM_FRAMEINTERVALS, &frmival))
+        {
+          if( errno == EINVAL)
+              break;
+          std::cerr << "VIDIOC_ENUM_FRAMEINTERVALS discrete" << std::endl;
+          std::exit(1);
+        }
+        fprintf( stderr, " %d/%d", frmival.discrete.numerator, frmival.discrete.denominator);
+      }
+      std::cerr << std::endl;
+    }
+    else
+    {
+      if( frmival.type == V4L2_FRMIVAL_TYPE_CONTINUOUS)
+      {
+        std::cerr << "type: " << frmival.type << " (continuous)" << std::endl;
+      }
+      else if( frmival.type == V4L2_FRMIVAL_TYPE_STEPWISE)
+      {
+        std::cerr << "type: " << frmival.type << " (stepwise)" << std::endl;
+      }
+      fprintf( stderr, "min:  %d/%d\n",
+               frmival.stepwise.min.numerator, frmival.stepwise.min.denominator);
+      fprintf( stderr, "max:  %d/%d\n",
+               frmival.stepwise.max.numerator, frmival.stepwise.max.denominator);
+      fprintf( stderr, "step: %d/%d\n",
+               frmival.stepwise.step.numerator, frmival.stepwise.step.denominator);
+    }
+    std::cerr << std::endl;
+  }
+  else
+  {
+    switch( errno)
+    {
+    case EINVAL:
+      break;
+    default:
+      errno_exit( "VIDIOC_ENUM_FRAMEINTERVALS");
+      break;
+    }
   }
   
-  if( p_nrows != fmt.fmt.pix.height)
-  {
-    p_nrows = fmt.fmt.pix.height;
-    std::cerr << "Image height set to " << p_nrows << " by device." << std::endl;
-  } 
-
   struct v4l2_streamparm frameint={0};
   frameint.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  frameint.parm.capture.timeperframe.numerator = 1;
-  frameint.parm.capture.timeperframe.denominator = p_fps;
+  if( frameint.parm.capture.capability & V4L2_CAP_TIMEPERFRAME)
+  {
+    std::cerr << "Framerate set to " << p_fps << " seconds." << std::endl;
+    frameint.parm.capture.timeperframe.numerator = 1;
+    frameint.parm.capture.timeperframe.denominator = p_fps;
+  }
   if (-1 == xioctl(dev, VIDIOC_S_PARM, &frameint))
       fprintf(stderr,"Unable to set frame interval.\n");
 }

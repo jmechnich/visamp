@@ -41,11 +41,60 @@ VisAmpWid::VisAmpWid()
 {
   setWindowTitle( "VisAmp");
   
+  std::string devicePath = "/dev/video0";
+  std::string playerPath = "/usr/bin/mpg123";
+  std::string filePath   = "";
+  
+  size_t argc = qApp->argc();
+  for( size_t i=1; i < argc; ++i)
+  {
+    std::string data = qApp->argv()[i];
+    if( data == "-h" || data == "--help")
+    {
+      std::cout << "usage: visamp [options] [filename]\n"
+                << "   Options:\n"
+                << "    -d | --device  " << "path to device\n"
+                << "    -p | --player  " << "path to commandline mp3 player\n";
+      std::exit(0);
+    }
+    if( data == "-d" || data == "--device")
+    {
+      if( i+1 > argc)
+      {
+        std::cerr << "Missing argument" << std::endl;
+        qApp->quit();
+      }
+      devicePath = qApp->argv()[++i];
+      continue;
+    }
+    else if( data == "-p" || data == "--player")
+    {
+      if( i+1 > argc)
+      {
+        std::cerr << "Missing argument" << std::endl;
+        qApp->quit();
+      }
+      playerPath = qApp->argv()[++i];
+      continue;
+    }
+    else
+    {
+      if( i+1 != argc)
+      {
+        std::cerr << "Stray argument '" << qApp->argv()[i] << "'" << std::endl;
+        qApp->quit();
+      }
+      filePath = qApp->argv()[i];
+      continue;
+    }
+  }
+  frameGrabber = new imrec::BasicFrameGrabber( devicePath.c_str());
+  
 /*-------------------------------------------------------------------------
  *  Initializing Bluescreen and Images
  *-------------------------------------------------------------------------*/
-  fg_rows = frameGrabber.nrows();
-  fg_cols = frameGrabber.ncols();
+  fg_rows = frameGrabber->nrows();
+  fg_cols = frameGrabber->ncols();
   
   BS.setTolerance(30);
   fidWid = new imrec::ImageOverlayWid(this);
@@ -61,18 +110,15 @@ VisAmpWid::VisAmpWid()
 /*-------------------------------------------------------------------------
  *  Initializing Player Object
  *-------------------------------------------------------------------------*/
-  if(qApp->argc() == 3){
-    player = new imrec::Player((qApp->argv())[1], (qApp->argv())[2]);
-    
-  } else {
+  if( !filePath.size())
+  {
     QString fileName = QFileDialog::getOpenFileName(
         this, "Open File...", QString::null,
         "Music/Playlist Files (*.mp3 *.m3u *.txt)");
     
-    ostringstream fname;
-    fname << fileName.toStdString();
-    player = new imrec::Player((qApp->argv())[1], fname.str().c_str());
+    filePath = fileName.toStdString();
   }
+  player = new imrec::Player( playerPath.c_str(), filePath.c_str());
     
 /*-------------------------------------------------------------------------
  *  Initializing Slider Object
@@ -428,22 +474,22 @@ VisAmpWid::VisAmpWid()
  *=======================================================================*/
 void VisAmpWid::processNextFrame()
 {
-  if( frameGrabber.isNextFrameAvailable())
+  if( frameGrabber->isNextFrameAvailable())
   {
         
     /*---------------------------------------------------------------------
      *  Process images
      *---------------------------------------------------------------------*/
-    frameGrabber.updateImageData();
+    frameGrabber->updateImageData();
 
     /*---------------------------------------------------------------------
      *  Copy Frame into our image
      *----------------------------------------------------------------------*/
-    imrec::BasicFrameGrabber::const_iterator p = frameGrabber.imageBegin();
+    imrec::BasicFrameGrabber::const_iterator p = frameGrabber->imageBegin();
     if( !mirrorImage)
     {
       imrec::Image<imrec::RgbColor<uchar> >::iterator q = workingImg.begin();
-      for( ; p!= frameGrabber.imageEnd(); ++p)
+      for( ; p!= frameGrabber->imageEnd(); ++p)
       {
         imrec::convertColor( *p, *q);
         ++q;
@@ -461,7 +507,7 @@ void VisAmpWid::processNextFrame()
       }
     }
     
-    frameGrabber.releaseImageData();
+    frameGrabber->releaseImageData();
     
     BS.process( workingImg.begin(), workingImg.end(),
                 bgr.begin(), bsCol, bsOut.begin() );
@@ -963,14 +1009,14 @@ void VisAmpWid::setBsTolerance(int tol)
  *=======================================================================*/
 void VisAmpWid::setBackground()
 {
-  while( !frameGrabber.isNextFrameAvailable());
-  frameGrabber.updateImageData();
-  bgr.resize( frameGrabber.nrows(), frameGrabber.ncols());
-  imrec::BasicFrameGrabber::const_iterator p = frameGrabber.imageBegin();
+  while( !frameGrabber->isNextFrameAvailable());
+  frameGrabber->updateImageData();
+  bgr.resize( frameGrabber->nrows(), frameGrabber->ncols());
+  imrec::BasicFrameGrabber::const_iterator p = frameGrabber->imageBegin();
   if( !mirrorImage)
   {
     imrec::Image<imrec::RgbColor<uchar> >::iterator q = bgr.begin();
-    for( ; p!= frameGrabber.imageEnd(); p++) {
+    for( ; p!= frameGrabber->imageEnd(); p++) {
       imrec::convertColor(*p, *q);
       q++;
     }
@@ -987,7 +1033,7 @@ void VisAmpWid::setBackground()
     }
   }
     
-  frameGrabber.releaseImageData();
+  frameGrabber->releaseImageData();
 }
 
 /*=========================================================================

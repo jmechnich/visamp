@@ -268,7 +268,7 @@ private:
 /*-------------------------------------------------------------------------
  *  Libimrec objects
  *-------------------------------------------------------------------------*/
-    imrec::BasicFrameGrabber                        frameGrabber ;   
+    imrec::BasicFrameGrabber*                       frameGrabber ;   
     rgbImage                                        workingImg   ;     
     rgbImage                                        bsOut        ;          
     rgbImage                                        bgr          ;
